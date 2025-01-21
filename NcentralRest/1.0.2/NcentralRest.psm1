@@ -670,7 +670,8 @@ function Get-NcentralDeviceServicesMonitoring {
     [CmdletBinding(DefaultParametersetName = 'All')]
     Param(
         [parameter(Mandatory = $false, ParameterSetName = 'All')][switch]$All,
-        [parameter(Mandatory = $true, ParameterSetName = 'Device', ValueFromPipelineByPropertyName = $true)][int[]]$DeviceId
+        [parameter(Mandatory = $true, ParameterSetName = 'Device', ValueFromPipelineByPropertyName = $true)][int[]]$DeviceId,
+        [parameter(Mandatory = $true, ParameterSetName = 'Customer', ValueFromPipelineByPropertyName = $true)][int[]]$CustomerId
     )
 
     begin {
@@ -707,12 +708,67 @@ function Get-NcentralDeviceServicesMonitoring {
         }
         if (($CustomerFilter['CustomerId'] | Measure-Object).count -gt 0) {
             return $global:_NcentralSession.Get('devices', $CustomerFilter, $true)
-        }
+        }       
         if (($DeviceIdFilter | Measure-Object).count -gt 0) {
             $deviceList = [System.Collections.ArrayList]@()
             foreach ($d in $deviceIdFilter['DeviceId']) {
                 #https://{custom-server}/api/devices/{deviceId}/service-monitor-status
                 $API = "devices/{0}/service-monitor-status" -f $d
+                $deviceList.Add($global:_NcentralSession.GetOne($API)) | Out-Null
+            }
+            return $deviceList
+        }
+        return $null
+    }
+}
+
+function Get-NcentralDeviceDetail {
+    [CmdletBinding(DefaultParametersetName = 'All')]
+    Param(
+        [parameter(Mandatory = $false, ParameterSetName = 'All')][switch]$All,
+        [parameter(Mandatory = $true, ParameterSetName = 'Device', ValueFromPipelineByPropertyName = $true)][int[]]$DeviceId,
+        [parameter(Mandatory = $true, ParameterSetName = 'Customer', ValueFromPipelineByPropertyName = $true)][int[]]$CustomerId
+    )
+
+    begin {
+        Test-NcentralConnection
+        $GetAll = $True
+        $CustomerFilter = [System.Collections.HashTable]@{ 'CustomerId' = [System.Collections.ArrayList]@() }
+        $DeviceIdFilter = [System.Collections.HashTable]@{ 'DeviceId' = [System.Collections.ArrayList]@() }
+    }
+
+    process {
+        switch ($PSCmdlet.ParameterSetName) {
+            'Customer' {
+                foreach ($c in $CustomerId) {
+                    if ($customerFilter['CustomerId'] -notcontains $c) {
+                        $GetAll = $false
+                        $customerFilter['CustomerId'].Add($c) | Out-Null
+                    }
+                }
+            }
+            'Device' {
+                foreach ($d in $DeviceId) {
+                    if ($DeviceIdFilter['DeviceId'] -notcontains $d) {
+                        $GetAll = $false
+                        $DeviceIdFilter['DeviceId'].Add($d) | Out-Null
+                    }
+                }
+            }
+        }
+    }
+
+    end {   
+        if ($true -eq $GetAll) {
+            return $global:_NcentralSession.Get('devices')
+        }
+        if (($CustomerFilter['CustomerId'] | Measure-Object).count -gt 0) {
+            return $global:_NcentralSession.Get('devices', $CustomerFilter, $true)
+        }   
+        if (($DeviceIdFilter | Measure-Object).count -gt 0) {
+            $deviceList = [System.Collections.ArrayList]@()
+            foreach ($d in $deviceIdFilter['DeviceId']) {
+                $API = "devices/{0}/assets" -f $d
                 $deviceList.Add($global:_NcentralSession.GetOne($API)) | Out-Null
             }
             return $deviceList
