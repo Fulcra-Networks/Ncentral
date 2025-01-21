@@ -666,12 +666,36 @@ function Get-NcentralDevice {
     }
 }
 
+<#
+    .SYNOPSIS
+    Gets device service monitoring information
+
+    .DESCRIPTION
+    Gets device service monitoring information
+    When passing one (or more) customer ID(s), only the devices belonging to that customer ID(s) are returned
+    When passing one (or more) device ID(s), only information for that device(s) is returned.
+
+    .INPUTS
+    A customer object from Get-NcentralCustomer
+
+    .OUTPUTS
+    An array of device services
+
+    .PARAMETER DeviceId
+    A device ID (or a list of device IDs, possibly from objects from the pipeline).
+
+    .PARAMETER CustomerId
+    A customer ID to limit the returned objects
+
+    .EXAMPLE
+    PS> Get-NcentralDeviceServicesMonitoring -DeviceId 1000,2000,3000
+    Gets the devices with ID 1000, 2000, and 3000.
+#>
 function Get-NcentralDeviceServicesMonitoring {
     [CmdletBinding(DefaultParametersetName = 'All')]
     Param(
         [parameter(Mandatory = $false, ParameterSetName = 'All')][switch]$All,
-        [parameter(Mandatory = $true, ParameterSetName = 'Device', ValueFromPipelineByPropertyName = $true)][int[]]$DeviceId,
-        [parameter(Mandatory = $true, ParameterSetName = 'Customer', ValueFromPipelineByPropertyName = $true)][int[]]$CustomerId
+        [parameter(Mandatory = $true, ParameterSetName = 'Device', ValueFromPipelineByPropertyName = $true)][int[]]$DeviceId
     )
 
     begin {
@@ -708,7 +732,7 @@ function Get-NcentralDeviceServicesMonitoring {
         }
         if (($CustomerFilter['CustomerId'] | Measure-Object).count -gt 0) {
             return $global:_NcentralSession.Get('devices', $CustomerFilter, $true)
-        }       
+        }
         if (($DeviceIdFilter | Measure-Object).count -gt 0) {
             $deviceList = [System.Collections.ArrayList]@()
             foreach ($d in $deviceIdFilter['DeviceId']) {
@@ -722,6 +746,31 @@ function Get-NcentralDeviceServicesMonitoring {
     }
 }
 
+<#
+    .SYNOPSIS
+    Gets device detailed information
+
+    .DESCRIPTION
+    Gets device detailed information
+    When passing one (or more) customer ID(s), only the devices belonging to that customer ID(s) are returned
+    When passing one (or more) device ID(s), only information for that device(s) is returned.
+
+    .INPUTS
+    A customer object from Get-NcentralCustomer
+
+    .OUTPUTS
+    An array of device asset details
+
+    .PARAMETER DeviceId
+    A device ID (or a list of device IDs, possibly from objects from the pipeline).
+
+    .PARAMETER CustomerId
+    A customer ID to limit the returned objects
+
+    .EXAMPLE
+    PS> Get-NcentralDeviceDetail -DeviceId 1000,2000,3000
+    Gets the devices with ID 1000, 2000, and 3000.
+#>
 function Get-NcentralDeviceDetail {
     [CmdletBinding(DefaultParametersetName = 'All')]
     Param(
@@ -1143,8 +1192,10 @@ Export-ModuleMember -Function Get-NcentralServerInfo
 Export-ModuleMember -Function Get-NcentralServerHealth
 Export-ModuleMember -Function Get-NcentralCustomer
 Export-ModuleMember -Function Get-NcentralDevice
+Export-ModuleMember -Function Get-NcentralDeviceDetail
 Export-ModuleMember -Function Get-NcentralDeviceByName
 Export-ModuleMember -Function Get-NcentralDeviceScheduledTask
+Export-ModuleMember -Function Get-NcentralDeviceServicesMonitoring
 Export-ModuleMember -Function Get-NcentralScheduledTask
 Export-ModuleMember -Function New-NcentralScheduledTaskCredential
 Export-ModuleMember -Function New-NcentralScheduledTaskParameter
